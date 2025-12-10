@@ -1,0 +1,54 @@
+body, html { margin: 0; padding: 0; height: 100%; font-family: "Microsoft YaHei", sans-serif; overflow: hidden; background-color: #333; }
+
+.editor-container { display: flex; height: 100%; }
+
+.sidebar-tools {
+  width: 100px;
+  background-color: #2c3e50;
+  color: #ecf0f1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px 5px;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+  z-index: 10;
+  user-select: none;
+}
+
+.tool-section { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
+/* 颜色网格样式 (New) */
+.color-section { gap: 6px; }
+.color-row { display: flex; gap: 6px; }
+.color-btn {
+  width: 22px; height: 22px; border-radius: 4px;
+  border: 2px solid #555; cursor: pointer; transition: 0.2s;
+}
+.color-btn:hover { transform: scale(1.1); border-color: #888; }
+.color-btn.active {
+  border-color: #fff; transform: scale(1.2); z-index: 2; box-shadow: 0 0 5px rgba(255,255,255,0.5);
+}
+
+/* 之前的按钮样式 */
+.tool-btn {
+  width: 80px; height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+  cursor: pointer; border-radius: 6px; transition: all 0.2s; background: rgba(255,255,255,0.05); border: 1px solid transparent;
+}
+.tool-btn:hover { background: rgba(255,255,255,0.15); }
+.tool-btn.active { background: #3498db; box-shadow: 0 4px 10px rgba(52, 152, 219, 0.4); transform: translateY(-1px); }
+.tool-btn .icon { font-size: 24px; margin-bottom: 4px; }
+.tool-btn .label { font-size: 12px; opacity: 0.8; }
+
+.tool-btn.small { height: 40px; font-size: 12px; flex-direction: row; gap: 5px; }
+.tool-btn.small .icon { font-size: 14px; margin: 0; }
+
+.divider { width: 80%; height: 1px; background: rgba(255,255,255,0.2); margin: 15px 0; }
+.bottom-actions { margin-top: auto; width: 100%; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+
+.primary-btn { width: 90%; padding: 10px 0; background: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; }
+.primary-btn:hover { background: #27ae60; }
+.cancel-btn { width: 90%; padding: 8px 0; background: transparent; color: #95a5a6; border: 1px solid #95a5a6; border-radius: 4px; cursor: pointer; }
+.cancel-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+.canvas-area { flex: 1; background-color: #555; display: flex; justify-content: center; align-items: center; overflow: auto; position: relative; }
+canvas { background: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.5); cursor: crosshair; }

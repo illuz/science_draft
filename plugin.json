@@ -1,0 +1,16 @@
+{
+    "pluginName": "智能理科草稿本",
+    "version": "1.5.0",
+    "description": "支持物理单位、独立绘图、文件夹存取的理科生产力工具",
+    "main": "index.html",
+    "preload": "preload.js",
+    "logo": "logo.png",
+    "features": [
+      {
+        "code": "science_draft",
+        "explain": "理科草稿本",
+        "cmds": ["草稿", "计算", "calc", "绘图", "draft"]
+      }
+    ]
+  }
+  

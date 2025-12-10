@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>智能理科草稿本 Ultimate</title>
+  
+  <!-- 1. 强制兼容代码：确保 math.js 能注入到 window -->
+  <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+  <script src="math.min.js"></script>
+  <script>if (window.module) module = window.module;</script>
+
+  <style>
+    /* === CSS 样式区 === */
+    body, html { margin: 0; padding: 0; height: 100%; font-family: "Consolas", "Microsoft YaHei", monospace; background: #f9f9f9; color: #333; overflow: hidden; }
+    .toolbar { height: 40px; background: #fff; border-bottom: 1px solid #eee; display: flex; align-items: center; padding: 0 15px; justify-content: space-between; user-select: none; }
+    .toolbar-title { font-weight: bold; color: #2c3e50; }
+    .btn-group { display: flex; gap: 8px; }
+    .btn { cursor: pointer; padding: 4px 12px; font-size: 12px; border-radius: 4px; background: #f0f0f0; color: #555; border: none; transition: 0.2s; }
+    .btn:hover { background: #e0e0e0; }
+    .btn-primary { background: #3498db; color: #fff; }
+    .btn-primary:hover { background: #2980b9; }
+    .main-container { display: flex; height: calc(100% - 40px); position: relative; }
+    #editor { flex: 1; height: 100%; padding: 30px; border: none; resize: none; outline: none; font-size: 20px; line-height: 1.8; box-sizing: border-box; background: #fff; color: #2c3e50; }
+    ::selection { background-color: #d1e8ff; color: #000; }
+    #image-sidebar { width: 0; background: #f4f5f7; border-left: 1px solid #e1e4e8; overflow-y: auto; transition: width 0.3s ease; display: flex; flex-direction: column; align-items: center; padding: 0; }
+    #image-sidebar.active { width: 280px; padding: 10px; }
+    .sidebar-tip { font-size:12px; color:#999; margin:10px 0; text-align:center; width:100%; }
+    .img-card { width: 95%; background: #fff; margin-bottom: 10px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; border: 2px solid transparent; cursor: pointer; overflow: hidden; }
+    .img-card:hover { border-color: #3498db; }
+    .img-card img { width: 100%; display: block; pointer-events: none; }
+    .img-card .del-btn { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; background: rgba(231, 76, 60, 0.9); color: #fff; border-radius: 50%; text-align: center; line-height: 18px; display: none; font-size: 14px; color:white; }
+    .img-card:hover .del-btn { display: block; }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+    .modal-content { background: #fff; padding: 25px; border-radius: 8px; width: 500px; max-height: 80%; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .key-tag { border: 1px solid #ccc; padding: 1px 5px; border-radius: 4px; font-size: 12px; background: #eee; }
+    table { width:100%; font-size:13px; border-collapse: collapse; margin-top:10px; }
+    th, td { padding:6px; border-bottom:1px solid #ddd; text-align:left; }
+    th { background:#f5f5f5; }
+  </style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="toolbar-title">📝 智能理科草稿本</div>
+  <div class="btn-group">
+    <button class="btn" id="btn-open-folder">📂 打开</button>
+    <button class="btn" id="btn-save-folder">💾 保存</button>
+    <div style="width:1px; height:20px; background:#ddd; margin:0 5px;"></div>
+    <button class="btn" id="btn-sidebar">🖼️ 素材</button>
+    <button class="btn btn-primary" id="btn-help">❓ 帮助</button>
+  </div>
+</div>
+
+<div class="main-container">
+  <textarea id="editor" placeholder="正在加载..."></textarea>
+  <div id="image-sidebar">
+    <div class="sidebar-tip">Ctrl+V 粘贴图片<br>双击在新窗口编辑</div>
+  </div>
+</div>
+
+<div id="help-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-content">
+    <h3>📚 功能速查</h3>
+    <ul>
+      <li><strong>计算：</strong> 输入 <code>1+1=</code> 出结果，按 <span class="key-tag">Tab</span> 上屏。</li>
+      <li><strong>上标：</strong> 输入 <code>x^-2</code> 后按 <span class="key-tag">空格</span>。</li>
+      <li><strong>绘图：</strong> 双击右侧图片打开独立窗口。</li>
+    </ul>
+    <h3>🧮 常用函数</h3>
+    <table>
+      <tr><th>功能</th><th>示例</th></tr>
+      <tr><td>三角</td><td><code>sin(30 deg)</code></td></tr>
+      <tr><td>求和</td><td><code>sigma(x^2, x, 1, 5)</code></td></tr>
+      <tr><td>积分</td><td><code>int(x^2, x, 0, 1)</code></td></tr>
+    </table>
+    <div style="text-align:center; margin-top:20px;"><button class="btn btn-primary" onclick="document.getElementById('help-modal').style.display='none'">关闭</button></div>
+  </div>
+</div>
+
+<!-- === 核心逻辑区 === -->
+<script>
+  // 1. 初始化 Math.js
+  let mathLib = null;
+  try {
+      if(typeof math !== 'undefined') {
+          const { create, all } = math;
+          mathLib = create(all);
+          // 注入自定义函数
+          const integrate = (expr, v, s, e) => {
+              const step=1000, h=(e-s)/step, f=mathLib.compile(expr), sc={};
+              let sum=0; sc[v]=s; sum+=f.evaluate(sc); sc[v]=e; sum+=f.evaluate(sc);
+              for(let i=1;i<step;i++) { sc[v]=s+i*h; sum+=(i%2===0?2:4)*f.evaluate(sc); }
+              return (h/3)*sum;
+          };
+          const sigma = (expr, v, s, e) => {
+              let sum=0, f=mathLib.compile(expr), sc={};
+              for(let i=s;i<=e;i++) { sc[v]=i; sum+=f.evaluate(sc); }
+              return sum;
+          };
+          mathLib.import({ d:mathLib.derivative, int:integrate, integral:integrate, sigma:sigma });
+      } else {
+          alert("错误：Math.js 未加载，请检查 math.min.js 文件！");
+      }
+  } catch(e) { console.error(e); }
+
+  // 符号映射
+  const superscriptMap = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '+': '⁺', '-': '⁻', '(': '⁽', ')': '⁾', 'n': 'ⁿ', '.': '˙' };
+  const reverseSuperscriptMap = Object.fromEntries(Object.entries(superscriptMap).map(([k, v]) => [v, k]));
+
+  // MathLogic 工具对象
+  const MathLogic = {
+      calculate: (input) => {
+          if (!input || !input.trim() || !mathLib) return null;
+          let clean = MathLogic.normalize(input);
+          try {
+              let res = mathLib.evaluate(clean);
+              if (res !== undefined) {
+                  let str = res.toString();
+                  if (typeof res === 'number' && !Number.isInteger(res)) str = parseFloat(res.toFixed(4)).toString();
+                  if (res.type === 'Unit') str = ' ' + str;
+                  return str;
+              }
+          } catch (e) {}
+          try {
+              let fuzzy = clean.replace(/[^0-9+\-*/().%^a-zA-Z]/g, ''); 
+              if (fuzzy && !/^[0-9.]+$/.test(fuzzy)) return mathLib.evaluate(fuzzy).toString();
+          } catch (e) {}
+          return null;
+      },
+      normalize: (s) => {
+          s = s.replace(/×/g, '*').replace(/÷/g, '/').replace(/π/g, 'pi').replace(/√/g, 'sqrt').replace(/≤/g, '<=').replace(/≥/g, '>=').replace(/≠/g, '!=');
+          const supRegex = new RegExp(`[${Object.values(superscriptMap).join('')}]+`, 'g');
+          s = s.replace(supRegex, (m) => '^' + m.split('').map(c => reverseSuperscriptMap[c]).join(''));
+          return s.replace(/\^([+\-]\d+)/g, '^($1)').replace(/（/g, '(').replace(/）/g, ')').replace(/＝/g, '=').split('=')[0]; 
+      },
+      toSuperscript: (str) => {
+          let c = ""; for (let char of str) c += superscriptMap[char] || char; return c;
+      }
+  };
+
+  // 2. 主 UI 逻辑
+  const editor = document.getElementById('editor');
+  const sidebar = document.getElementById('image-sidebar');
+  const DB_ID = 'science_draft_v4'; 
+  let isResultSelected = false;
+
+  // 输入事件
+  editor.addEventListener('input', (e) => {
+      saveDraft();
+      // 计算
+      if (e.data === '=' || e.data === '＝') {
+          const end = editor.selectionEnd;
+          const text = editor.value.substring(0, end);
+          const line = text.substring(text.lastIndexOf('\n') + 1, end - 1);
+          const res = MathLogic.calculate(line);
+          if (res) {
+              editor.setRangeText(res.startsWith(' ')?res:(' '+res), end, end, 'select');
+              isResultSelected = true;
+          }
+          return;
+      }
+      isResultSelected = false;
+      // 符号替换
+      if (e.inputType && e.inputType.startsWith("insert")) {
+          const end = editor.selectionEnd;
+          const val = editor.value;
+          const before = val.substring(0, end);
+          const after = val.substring(end);
+          let n = val, off = 0;
+          if (before.endsWith('*')) { n = before.slice(0,-1)+'×'+after; }
+          else if (before.endsWith('/')) { n = before.slice(0,-1)+'÷'+after; }
+          else if (before.endsWith('pi')) { n = before.slice(0,-2)+'π'+after; off=-1; }
+          else if (before.endsWith('sqrt')) { n = before.slice(0,-4)+'√'+after; off=-3; }
+          if (n !== val) { editor.value = n; editor.selectionStart = end+off; editor.selectionEnd = end+off; saveDraft(); }
+      }
+  });
+
+  // 按键事件
+  editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+          if (isResultSelected) { e.preventDefault(); editor.selectionStart = editor.selectionEnd; isResultSelected = false; }
+          else { e.preventDefault(); document.execCommand('insertText', false, '\t'); }
+      }
+      if (e.key === ' ') {
+          const end = editor.selectionEnd;
+          const match = editor.value.substring(0, end).match(/\^([0-9+\-n().]+)$/);
+          if (match) {
+              e.preventDefault();
+              const conv = MathLogic.toSuperscript(match[1]);
+              editor.setRangeText(conv + ' ', end - match[0].length, end, 'end');
+              saveDraft();
+          }
+      }
+  });
+
+  // 文件夹 & 侧边栏功能
+  document.getElementById('btn-save-folder').onclick = () => {
+      if(!window.services) return alert("插件错误: preload.js 未加载");
+      const path = window.services.selectFolder();
+      if(!path) return;
+      const imgs = []; document.querySelectorAll('#image-sidebar img').forEach(i => imgs.push(i.src));
+      const res = window.services.saveToFolder(path, editor.value, imgs);
+      if(res.success) utools.showNotification("已保存到: " + res.newPath);
+      else alert("失败: " + res.error);
+  };
+
+  document.getElementById('btn-open-folder').onclick = () => {
+      if(!window.services) return;
+      const path = window.services.selectFolder();
+      if(!path) return;
+      const res = window.services.loadFromFolder(path);
+      if(res.success) {
+          editor.value = res.data.text;
+          sidebar.innerHTML = '<div class="sidebar-tip">Ctrl+V 粘贴图片<br>双击在新窗口编辑</div>';
+          res.data.images.forEach(addImageToSidebar);
+          if(res.data.images.length) sidebar.classList.add('active');
+          saveDraft();
+          utools.showNotification("导入成功");
+      } else alert("失败: " + res.error);
+  };
+
+  function addImageToSidebar(src) {
+      const div = document.createElement('div'); div.className = 'img-card';
+      const id = Date.now() + Math.random().toString(36).substr(2, 5);
+      div.innerHTML = `<img src="${src}" data-id="${id}"><div class="del-btn">×</div><div class="edit-hint">双击编辑</div>`;
+      div.ondblclick = () => {
+          if(!window.utools) return;
+          localStorage.setItem('utools_paint_request', JSON.stringify({id, src}));
+          utools.createBrowserWindow('editor.html', { title: '绘图板', width: 1000, height: 800, resizable: true, webPreferences: {nodeIntegration: true} });
+      };
+      div.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); div.remove(); saveDraft(); };
+      sidebar.appendChild(div);
+  }
+
+  window.addEventListener('storage', (e) => {
+      if (e.key === 'utools_paint_finished') {
+          const p = JSON.parse(e.newValue);
+          const img = document.querySelector(`img[data-id="${p.id}"]`);
+          if(img) { 
+              img.src = p.data; 
+              saveDraft(); 
+              img.parentElement.style.border="2px solid #2ecc71";
+              setTimeout(()=>img.parentElement.style.border="2px solid transparent", 1000);
+          }
+          localStorage.removeItem('utools_paint_finished');
+      }
+  });
+
+  document.addEventListener('paste', (e) => {
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (let i in items) {
+          if (items[i].kind === 'file' && items[i].type.includes('image/')) {
+              const reader = new FileReader();
+              reader.onload = (evt) => { addImageToSidebar(evt.target.result); saveDraft(); sidebar.classList.add('active'); };
+              reader.readAsDataURL(items[i].getAsFile());
+          }
+      }
+  });
+
+  document.getElementById('btn-sidebar').onclick = () => sidebar.classList.toggle('active');
+  document.getElementById('btn-help').onclick = () => document.getElementById('help-modal').style.display = 'flex';
+
+  function saveDraft() {
+     if(!window.utools) return;
+     const imgs = []; document.querySelectorAll('#image-sidebar img').forEach(i => imgs.push(i.src));
+     utools.db.put({ _id: DB_ID, data: { text: editor.value, images: imgs }, _rev: utools.db.get(DB_ID)?._rev });
+  }
+  function loadDraft() {
+     editor.placeholder = "输入 1+1= 计算...\n输入 x^-2 [空格] 变上标...";
+     if(!window.utools) return;
+     const doc = utools.db.get(DB_ID);
+     if(doc && doc.data) {
+         editor.value = doc.data.text||'';
+         (doc.data.images||[]).forEach(addImageToSidebar);
+         if(doc.data.images?.length) sidebar.classList.add('active');
+     } else { document.getElementById('help-modal').style.display = 'flex'; }
+  }
+  if(window.utools) utools.onPluginEnter(() => { editor.focus(); loadDraft(); }); else loadDraft();
+</script>
+</body>
+</html>

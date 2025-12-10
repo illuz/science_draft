@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>理科绘图板</title>
+  <link rel="stylesheet" href="editor_style.css">
+</head>
+<body>
+
+<div class="editor-container">
+  <!-- 左侧工具栏 -->
+  <div class="sidebar-tools">
+    <div class="tool-section">
+      <div class="tool-btn active" data-tool="pen" title="画笔 (P)">
+        <span class="icon">✏️</span> <span class="label">画笔</span>
+      </div>
+      <div class="tool-btn" data-tool="line" title="直线 (L)">
+        <span class="icon">📏</span> <span class="label">直线</span>
+      </div>
+      <div class="tool-btn" data-tool="arrow" title="箭头 (A)">
+        <span class="icon">↗</span> <span class="label">箭头</span>
+      </div>
+      <div class="tool-btn" data-tool="rect" title="矩形 (R)">
+        <span class="icon">⬜</span> <span class="label">矩形</span>
+      </div>
+      <div class="tool-btn" data-tool="circle" title="圆形 (C)">
+        <span class="icon">⚪</span> <span class="label">圆形</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 颜色区域 (New) -->
+    <div class="tool-section color-section">
+      <!-- 第一排 -->
+      <div class="color-row">
+        <div class="color-btn active" data-color="red" style="background:#e74c3c" title="红色"></div>
+        <div class="color-btn" data-color="#e67e22" style="background:#e67e22" title="橙色"></div>
+        <div class="color-btn" data-color="#f1c40f" style="background:#f1c40f" title="黄色"></div>
+      </div>
+      <!-- 第二排 -->
+      <div class="color-row">
+        <div class="color-btn" data-color="#2ecc71" style="background:#2ecc71" title="绿色"></div>
+        <div class="color-btn" data-color="#3498db" style="background:#3498db" title="蓝色"></div>
+        <div class="color-btn" data-color="#9b59b6" style="background:#9b59b6" title="紫色"></div>
+      </div>
+      <!-- 第三排 -->
+      <div class="color-row">
+        <div class="color-btn" data-color="#34495e" style="background:#34495e" title="深灰"></div>
+        <div class="color-btn" data-color="#000000" style="background:#000000" title="黑色"></div>
+        <div class="color-btn" data-color="#ecf0f1" style="background:#fff; border-color:#ccc;" title="白色"></div>
+      </div>
+    </div>
+    
+    <div class="tool-btn" data-tool="eraser" title="橡皮擦 (E)" style="margin-top:10px;">
+      <span class="icon">🧹</span> <span class="label">橡皮</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="tool-section action-btns">
+      <div class="tool-btn small" id="btn-undo" title="撤销 (Ctrl+Z)">↩️ 撤销</div>
+      <div class="tool-btn small" id="btn-clear" title="清空画布">🗑️ 清空</div>
+    </div>
+    
+    <div class="bottom-actions">
+      <button class="primary-btn" id="btn-save">💾 保存</button>
+      <button class="cancel-btn" id="btn-cancel">取消</button>
+    </div>
+  </div>
+
+  <!-- 画布 -->
+  <div class="canvas-area">
+    <canvas id="main-canvas"></canvas>
+  </div>
+</div>
+
+<script src="editor_logic.js"></script>
+</body>
+</html>
