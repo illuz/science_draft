@@ -46,6 +46,8 @@
     <button class="btn" id="btn-open-folder">📂 打开</button>
     <button class="btn" id="btn-save-folder">💾 保存</button>
     <div style="width:1px; height:20px; background:#ddd; margin:0 5px;"></div>
+    <!-- 新增清屏按钮 -->
+    <button class="btn" id="btn-clear" title="清空所有文字">🗑️ 清屏</button>
     <button class="btn" id="btn-sidebar">🖼️ 素材</button>
     <button class="btn btn-primary" id="btn-help">❓ 帮助</button>
   </div>
@@ -55,32 +57,126 @@
   <textarea id="editor" placeholder="正在加载..."></textarea>
   <div id="image-sidebar">
     <div class="sidebar-tip">Ctrl+V 粘贴图片<br>双击在新窗口编辑</div>
+  </div> 
+</div>
+
+<!-- 升级版帮助弹窗 -->
+<div id="help-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-content" style="width: 680px; max-height: 85vh; display:flex; flex-direction:column;">
+    
+    <!-- 弹窗标题栏 -->
+    <div class="modal-header" style="border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 15px; display:flex; justify-content:space-between; align-items:center;">
+       <span style="font-size:18px; font-weight:bold; color:#2c3e50;">📚 智能理科草稿本 - 全能指南</span>
+       <button style="border:none; background:none; cursor:pointer; font-size:24px; color:#999;" onclick="document.getElementById('help-modal').style.display='none'">×</button>
+    </div>
+
+    <div class="modal-body" style="font-size: 14px; line-height: 1.6; overflow-y:auto; padding-right:5px;">
+      
+      <!-- 板块 1: 核心交互 -->
+      <h3 style="color:#2c3e50; border-left: 4px solid #3498db; padding-left: 10px; margin-top: 0; background:#f4f6f8; padding-top:5px; padding-bottom:5px;">⚡ 核心交互技巧</h3>
+      <ul style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-left: 20px; margin: 10px 0;">
+        <li><strong>计算预览：</strong> 输入 <code>1+1=</code> 显示灰色结果。</li>
+        <li><strong>确认上屏：</strong> 按 <span class="key-tag">Tab</span> 键将结果写入草稿。</li>
+        <li><strong>智能上标：</strong> 输入 <code>x^-2</code> 后按 <span class="key-tag">空格</span> → x⁻²。</li>
+        <li><strong>符号替换：</strong> <code>pi</code>→π，<code>*</code>→×，<code>sqrt</code>→√。</li>
+        <li><strong>素材管理：</strong> <span class="key-tag">Ctrl+V</span> 粘贴截图，双击图片编辑。</li>
+        <li><strong>一键清屏：</strong> 点击顶部“🗑️ 清屏”重置画布。</li>
+      </ul>
+
+      <!-- 板块 2: 文件管理 -->
+      <h3 style="color:#2c3e50; border-left: 4px solid #e67e22; padding-left: 10px; background:#f4f6f8; padding-top:5px; padding-bottom:5px;">📂 文件与项目管理</h3>
+      <div style="padding: 0 10px;">
+        <p><strong>💾 存为文件夹：</strong> 推荐使用！系统会自动创建一个带时间戳的文件夹（如 <code>20251010_作业A</code>），将你的<strong>文字草稿</strong>(txt)和<strong>所有图片素材</strong>(png)完整打包保存。</p>
+        <p><strong>📂 打开文件夹：</strong> 选择之前的项目文件夹，即可一键恢复当时的所有计算过程和图片标记。</p>
+      </div>
+
+      <!-- 板块 3: 理科函数 -->
+      <h3 style="color:#2c3e50; border-left: 4px solid #27ae60; padding-left: 10px; background:#f4f6f8; padding-top:5px; padding-bottom:5px;">🧮 理科函数速查表</h3>
+      <table style="width:100%; font-size:13px; border-collapse: collapse; border: 1px solid #eee;">
+        <tr style="background:#f8f9fa; color:#666; text-align:left;">
+          <th style="padding:8px; border-bottom:1px solid #ddd;">分类</th>
+          <th style="padding:8px; border-bottom:1px solid #ddd;">语法示例</th>
+          <th style="padding:8px; border-bottom:1px solid #ddd;">说明</th>
+        </tr>
+        <tr>
+          <td><strong>基础代数</strong></td>
+          <td><code>5!</code> / <code>sqrt(9)</code> / <code>abs(-5)</code></td>
+          <td>阶乘、根号、绝对值</td>
+        </tr>
+        <tr>
+          <td><strong>三角函数</strong></td>
+          <td><code>sin(30 deg)</code> / <code>cos(pi)</code></td>
+          <td>务必区分 deg(度) 和 rad(弧度)</td>
+        </tr>
+        <tr>
+          <td><strong>排列组合</strong></td>
+          <td><code>combinations(5, 2)</code></td>
+          <td>从 5 个中取 2 个的组合数 (C₅²)</td>
+        </tr>
+        <tr>
+          <td><strong>求和/统计</strong></td>
+          <td><code>sum(1, 2, 3)</code> / <code>mean(1, 2, 3)</code></td>
+          <td>求和、求平均值</td>
+        </tr>
+        <tr>
+          <td><strong>复杂求和</strong></td>
+          <td><code>sigma(x^2, x, 1, 5)</code></td>
+          <td>计算 $\sum_{i=1}^{5} x^2$ (表达式, 变量, 起始, 结束)</td>
+        </tr>
+        <tr>
+          <td><strong>微积分</strong></td>
+          <td><code>d(x^2, x)</code> / <code>int(x^2, x, 0, 1)</code></td>
+          <td>求导数 (Derivative) / 定积分 (Integral)</td>
+        </tr>
+        <tr>
+          <td><strong>线性代数</strong></td>
+          <td><code>det([1, 2; 3, 4])</code></td>
+          <td>计算行列式 (矩阵用 <code>;</code> 分行)</td>
+        </tr>
+        <tr>
+          <td><strong>矩阵运算</strong></td>
+          <td><code>[1, 2] * [3, 4]'</code></td>
+          <td>矩阵乘法 (<code>'</code> 表示转置)</td>
+        </tr>
+      </table>
+
+      <div style="text-align:center; margin-top:20px; padding-top:10px; border-top:1px solid #eee;">
+        <button class="btn btn-primary" onclick="document.getElementById('help-modal').style.display='none'" style="padding: 8px 40px; font-size: 14px;">我学会了</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<div id="help-modal" class="modal-overlay" style="display:none;">
-  <div class="modal-content">
-    <h3>📚 功能速查</h3>
-    <ul>
-      <li><strong>计算：</strong> 输入 <code>1+1=</code> 出结果，按 <span class="key-tag">Tab</span> 上屏。</li>
-      <li><strong>上标：</strong> 输入 <code>x^-2</code> 后按 <span class="key-tag">空格</span>。</li>
-      <li><strong>绘图：</strong> 双击右侧图片打开独立窗口。</li>
-    </ul>
-    <h3>🧮 常用函数</h3>
-    <table>
-      <tr><th>功能</th><th>示例</th></tr>
-      <tr><td>三角</td><td><code>sin(30 deg)</code></td></tr>
-      <tr><td>求和</td><td><code>sigma(x^2, x, 1, 5)</code></td></tr>
-      <tr><td>积分</td><td><code>int(x^2, x, 0, 1)</code></td></tr>
-    </table>
-    <div style="text-align:center; margin-top:20px;"><button class="btn btn-primary" onclick="document.getElementById('help-modal').style.display='none'">关闭</button></div>
-  </div>
-</div>
 
 <!-- === 核心逻辑区 === -->
 <script>
   // 1. 初始化 Math.js
   let mathLib = null;
+  // --- 新增：一键清屏功能 ---
+  // --- 修改后：一键清屏 (文字 + 图片) ---
+document.getElementById('btn-clear').onclick = () => {
+    // 提示语变了，告知用户图片也会没了
+    if (confirm("💥 确定要清空所有内容吗？\n\n此操作将删除：\n1. 所有草稿文字\n2. 侧边栏所有图片素材\n\n(不可撤销，请谨慎操作)")) {
+        
+        // 1. 清空文字
+        editor.value = "";
+        
+        // 2. 清空图片 (保留提示语，删除所有 img-card)
+        const sidebar = document.getElementById('image-sidebar');
+        // 重置为初始状态
+        sidebar.innerHTML = '<div class="sidebar-tip">Ctrl+V 粘贴图片<br>双击在新窗口编辑</div>';
+        
+        // 3. 自动收起侧边栏 (因为它空了)
+        sidebar.classList.remove('active');
+
+        // 4. 立即保存空状态 & 聚焦
+        saveDraft();
+        editor.focus();
+        
+        // 给个轻提示
+        if(window.utools) utools.showNotification("已清空所有内容");
+    }
+};
   try {
       if(typeof math !== 'undefined') {
           const { create, all } = math;
