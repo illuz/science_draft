@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>智能理科草稿本 Ultimate</title>
+  <!-- <title>智能理科草稿本 Ultimate</title> -->
   
   <!-- 1. 强制兼容代码：确保 math.js 能注入到 window -->
   <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
@@ -10,50 +10,215 @@
   <script>if (window.module) module = window.module;</script>
 
   <style>
-    /* === CSS 样式区 === */
-    body, html { margin: 0; padding: 0; height: 100%; font-family: "Consolas", "Microsoft YaHei", monospace; background: #f9f9f9; color: #333; overflow: hidden; }
-    .toolbar { height: 40px; background: #fff; border-bottom: 1px solid #eee; display: flex; align-items: center; padding: 0 15px; justify-content: space-between; user-select: none; }
-    .toolbar-title { font-weight: bold; color: #2c3e50; }
-    .btn-group { display: flex; gap: 8px; }
-    .btn { cursor: pointer; padding: 4px 12px; font-size: 12px; border-radius: 4px; background: #f0f0f0; color: #555; border: none; transition: 0.2s; }
-    .btn:hover { background: #e0e0e0; }
-    .btn-primary { background: #3498db; color: #fff; }
-    .btn-primary:hover { background: #2980b9; }
-    .main-container { display: flex; height: calc(100% - 40px); position: relative; }
-    #editor { flex: 1; height: 100%; padding: 30px; border: none; resize: none; outline: none; font-size: 20px; line-height: 1.8; box-sizing: border-box; background: #fff; color: #2c3e50; }
-    ::selection { background-color: #d1e8ff; color: #000; }
-    #image-sidebar { width: 0; background: #f4f5f7; border-left: 1px solid #e1e4e8; overflow-y: auto; transition: width 0.3s ease; display: flex; flex-direction: column; align-items: center; padding: 0; }
-    #image-sidebar.active { width: 280px; padding: 10px; }
-    .sidebar-tip { font-size:12px; color:#999; margin:10px 0; text-align:center; width:100%; }
-    .img-card { width: 95%; background: #fff; margin-bottom: 10px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; border: 2px solid transparent; cursor: pointer; overflow: hidden; }
-    .img-card:hover { border-color: #3498db; }
+    /* === 全局深色主题 === */
+    body, html { margin: 0; padding: 0; height: 100%; font-family: "Consolas", "Microsoft YaHei", sans-serif; background: #303133; color: #E0E0E0; overflow: hidden; }
+    
+    /* 1. 顶部标题栏 (新配色 #5D5950) */
+    .header {
+      height: 50px;
+      background: #5D5950;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      user-select: none;
+      z-index: 10;
+      position: relative;
+    }
+    .header-title { font-size: 16px; font-weight: bold; color: #fff; letter-spacing: 1px; opacity: 0.9; }
+    .menu-btn { cursor: pointer; font-size: 24px; color: #ddd; transition: 0.2s; }
+    .menu-btn:hover { color: #fff; transform: scale(1.1); }
+
+    /* 2. 主容器 */
+    .main-container { display: flex; height: calc(100% - 50px); position: relative; }
+    
+    /* 3. 编辑器 (融入背景，去除边框) */
+    #editor {
+      flex: 1;
+      height: 100%;
+      padding: 30px;
+      padding-bottom: 80px; /* 给底部工具栏留出空间 */
+      border: none;
+      resize: none;
+      outline: none;
+      font-size: 20px;
+      line-height: 1.8;
+      box-sizing: border-box;
+      background: #303133;
+      color: #E0E0E0;
+      font-family: inherit;
+    }
+    /* 选中文字颜色 */
+    ::selection { background-color: #5D5950; color: #fff; }
+    /* 滚动条深色化 */
+    ::-webkit-scrollbar { width: 8px; background: #303133; }
+    ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+
+    /* 4. 底部悬浮工具栏 (核心新增样式) */
+    .bottom-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 25px;
+      background: rgba(0, 0, 0, 0.3); /* 半透明黑底 */
+      padding: 10px 30px;
+      border-radius: 30px;
+      backdrop-filter: blur(5px);
+      z-index: 100;
+      transition: all 0.3s;
+    }
+    .bottom-bar:hover { background: rgba(0, 0, 0, 0.6); }
+
+    .icon-btn {
+      width: 40px;   /* 定义按钮区域大小 */
+      height: 40px;
+      cursor: pointer;
+      transition: 0.2s;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }/* 图片样式控制 */
+    .icon-btn img {
+      width: 24px;   /* 图标显示大小 */
+      height: 24px;
+      opacity: 0.6;  /* 默认稍微暗一点 */
+      /* filter: invert(1); */ /* 如果你的图标是纯黑色的，取消这行的注释把它变白 */
+      transition: all 0.2s;
+    }
+
+    /* 悬停效果 */
+    .icon-btn:hover {
+      transform: translateY(-3px); /* 向上浮动 */
+    }
+    
+    .icon-btn:hover img {
+      opacity: 1; /* 变亮 */
+    }
+
+    /* 悬停提示文字位置微调 */
+    .icon-btn:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      top: -35px;
+      background: #000;
+      color: #fff;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .icon-btn:hover { color: #fff; transform: translateY(-3px); }
+    /* 鼠标悬停提示 */
+    .icon-btn:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      top: -35px;
+      background: #000;
+      color: #fff;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    /* 5. 侧边栏 (深色 #2B2B2B) */
+    #image-sidebar {
+      width: 0;
+      background: #2B2B2B;
+      border-left: 1px solid #444;
+      overflow-y: auto;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0;
+      z-index: 20;
+    }
+    #image-sidebar.active { width: 300px; padding: 15px; }
+    
+    .sidebar-tip { font-size:12px; color:#666; margin:20px 0; text-align:center; width:100%; }
+
+    /* 图片卡片深色适配 */
+    .img-card {
+      width: 100%;
+      background: #3c3f41;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      position: relative;
+      border: 2px solid transparent;
+      cursor: zoom-in;
+      overflow: hidden;
+      transition: 0.2s;
+    }
+    .img-card:hover { border-color: #888; transform: scale(1.02); }
     .img-card img { width: 100%; display: block; pointer-events: none; }
-    .img-card .del-btn { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; background: rgba(231, 76, 60, 0.9); color: #fff; border-radius: 50%; text-align: center; line-height: 18px; display: none; font-size: 14px; color:white; }
+    .img-card .del-btn {
+      position: absolute; top: 5px; right: 5px; width: 22px; height: 22px;
+      background: rgba(0,0,0,0.6); color: #fff; border-radius: 50%;
+      text-align: center; line-height: 20px; display: none; font-size: 14px;
+      cursor: pointer;
+      color: white; /* 确保叉号是白色 */
+    }
     .img-card:hover .del-btn { display: block; }
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 2000; display: flex; align-items: center; justify-content: center; }
-    .modal-content { background: #fff; padding: 25px; border-radius: 8px; width: 500px; max-height: 80%; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-    .key-tag { border: 1px solid #ccc; padding: 1px 5px; border-radius: 4px; font-size: 12px; background: #eee; }
-    table { width:100%; font-size:13px; border-collapse: collapse; margin-top:10px; }
-    th, td { padding:6px; border-bottom:1px solid #ddd; text-align:left; }
-    th { background:#f5f5f5; }
+
+    /* 6. 帮助弹窗 (深色适配) */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+    .modal-content { background: #3c3f41; color: #eee; padding: 25px; border-radius: 12px; width: 600px; max-height: 85vh; overflow-y: auto; box-shadow: 0 15px 50px rgba(0,0,0,0.5); border: 1px solid #555; }
+    
+    table { width:100%; font-size:13px; border-collapse: collapse; margin-top:10px; color: #ccc; }
+    th, td { padding:8px; border-bottom:1px solid #555; text-align:left; }
+    th { background:#333; color: #fff; }
+    code { background: #222; padding: 2px 5px; border-radius: 3px; color: #e67e22; font-family: "Consolas"; }
+    .key-tag { border: 1px solid #666; padding: 1px 6px; border-radius: 4px; font-size: 12px; background: #444; color: #fff; }
+    
+    .btn-close {
+      background: #5D5950; color: #fff; border: none; padding: 8px 30px; border-radius: 4px; cursor: pointer; margin-top: 20px; transition: 0.2s;
+    }
+    .btn-close:hover { background: #777265; }
   </style>
 </head>
 <body>
 
 <div class="toolbar">
-  <div class="toolbar-title">📝 智能理科草稿本</div>
-  <div class="btn-group">
-    <button class="btn" id="btn-open-folder">📂 打开</button>
-    <button class="btn" id="btn-save-folder">💾 保存</button>
-    <div style="width:1px; height:20px; background:#ddd; margin:0 5px;"></div>
-    <!-- 新增清屏按钮 -->
-    <button class="btn" id="btn-clear" title="清空所有文字">🗑️ 清屏</button>
-    <button class="btn" id="btn-sidebar">🖼️ 素材</button>
-    <button class="btn btn-primary" id="btn-help">❓ 帮助</button>
+    <!-- <div class="toolbar-title">📝 智能理科草稿本</div> -->
+  <!-- 顶部 Header -->
+<div class="header">
+  <div class="header-title">计算公式</div>
+  <!-- 帮助按钮移到了这里 -->
+  <div class="menu-btn" id="btn-help" title="帮助/菜单">≡</div>
+</div>
   </div>
 </div>
 
 <div class="main-container">
+    <!-- 底部悬浮工具栏 -->
+<div class="bottom-bar">
+  <!-- 清屏 -->
+  <div class="icon-btn" id="btn-clear" data-tip="清空">
+    <!-- 请确保您的 icons 文件夹里有 clear.png -->
+    <img src="icons/clear.png" alt="清空">
+  </div>
+  
+  <!-- 素材栏开关 -->
+  <div class="icon-btn" id="btn-sidebar" data-tip="素材栏">
+    <img src="icons/image.png" alt="素材">
+  </div>
+  
+  <!-- 存为文件夹 -->
+  <div class="icon-btn" id="btn-save-folder" data-tip="存为文件夹">
+    <img src="icons/save.png" alt="保存">
+  </div>
+  
+  <!-- 打开文件夹 -->
+  <div class="icon-btn" id="btn-open-folder" data-tip="打开文件夹">
+    <img src="icons/folder.png" alt="打开">
+  </div>
+</div>
   <textarea id="editor" placeholder="正在加载..."></textarea>
   <div id="image-sidebar">
     <div class="sidebar-tip">Ctrl+V 粘贴图片<br>双击在新窗口编辑</div>
