@@ -5,6 +5,7 @@ window.AppConfig = {
     dataFolderPath: '',                    // 数据根目录
     currentGroup: '随便算算',               // 当前选中的分组
     groups: ['随便算算'],                   // 分组列表
+    groupColors: { '随便算算': '#3498db' }, // 分组颜色映射
     autoSave: false,                       // 是否开启自动保存
     autoSaveInterval: 60,                  // 自动保存间隔(秒)
     keepVersionDays: 7,                    // 保留版本天数

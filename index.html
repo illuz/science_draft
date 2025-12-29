@@ -69,8 +69,7 @@
       flex-shrink: 0; /* 防止 tab 被压缩 */
     }
     .tab:hover {
-      background: rgba(0,0,0,0.3);
-      border-color: rgba(255,255,255,0.1);
+      opacity: 0.9;
     }
     .tab.active {
       background: #3498db;
@@ -162,14 +161,14 @@
     /* 4. 底部悬浮工具栏 (核心新增样式) */
     .bottom-bar {
       position: absolute;
-      bottom: 20px;
+      bottom: 15px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
-      gap: 25px;
+      gap: 15px;
       background: rgba(0, 0, 0, 0.3); /* 半透明黑底 */
-      padding: 10px 30px;
-      border-radius: 30px;
+      padding: 6px 20px;
+      border-radius: 20px;
       backdrop-filter: blur(5px);
       z-index: 100;
       transition: all 0.3s;
@@ -177,8 +176,8 @@
     .bottom-bar:hover { background: rgba(0, 0, 0, 0.6); }
 
     .icon-btn {
-      width: 40px;   /* 定义按钮区域大小 */
-      height: 40px;
+      width: 28px;   /* 定义按钮区域大小 */
+      height: 28px;
       cursor: pointer;
       transition: 0.2s;
       position: relative;
@@ -187,8 +186,8 @@
       justify-content: center;
     }/* 图片样式控制 */
     .icon-btn img {
-      width: 24px;   /* 图标显示大小 */
-      height: 24px;
+      width: 18px;   /* 图标显示大小 */
+      height: 18px;
       opacity: 0.6;  /* 默认稍微暗一点 */
       /* filter: invert(1); */ /* 如果你的图标是纯黑色的，取消这行的注释把它变白 */
       transition: all 0.2s;
@@ -469,6 +468,49 @@
     }
     .dialog-btn-secondary:hover { background: #666; }
 
+    /* 对话框内的颜色选择器 */
+    .dialog-color-picker {
+      margin: 15px 0;
+    }
+    .dialog-color-label {
+      color: #ccc;
+      font-size: 13px;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .dialog-color-options {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .dialog-color-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .dialog-color-dot:hover {
+      transform: scale(1.15);
+      border-color: rgba(255,255,255,0.3);
+    }
+    .dialog-color-dot.selected {
+      border-color: #fff;
+      box-shadow: 0 0 8px rgba(255,255,255,0.6);
+    }
+    .dialog-color-dot.selected::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
     /* 轻量级消息提示 */
     .toast-message {
       position: fixed;
@@ -584,7 +626,7 @@
   <!-- 右侧按钮组 -->
   <div class="header-right">
     <div class="icon-btn-header" id="btn-settings" title="设置">⚙</div>
-    <div class="icon-btn-header" id="btn-help" title="帮助">≡</div>
+    <div class="icon-btn-header" id="btn-help" title="帮助">?</div>
   </div>
 </div>
 
@@ -788,6 +830,10 @@
     <div class="dialog-title" id="dialog-title">提示</div>
     <div class="dialog-message" id="dialog-message"></div>
     <input type="text" class="dialog-input" id="dialog-input" style="display:none;">
+    <div class="dialog-color-picker" id="dialog-color-picker" style="display:none;">
+      <label class="dialog-color-label">选择颜色</label>
+      <div class="dialog-color-options" id="dialog-color-options"></div>
+    </div>
     <div class="dialog-buttons">
       <button class="dialog-btn dialog-btn-secondary" id="dialog-cancel">取消</button>
       <button class="dialog-btn dialog-btn-primary" id="dialog-confirm">确定</button>
@@ -814,7 +860,23 @@
 
 <!-- === 核心逻辑区 === -->
 <script>
-  // 0. 轻量级消息提示函数
+  // 0. 颜色配置
+  const COLORS = [
+    { name: '蓝色', value: '#3498db' },
+    { name: '绿色', value: '#2ecc71' },
+    { name: '紫色', value: '#9b59b6' },
+    { name: '橙色', value: '#e67e22' },
+    { name: '红色', value: '#e74c3c' },
+    { name: '青色', value: '#1abc9c' },
+    { name: '粉色', value: '#e91e63' },
+    { name: '黄色', value: '#f39c12' },
+    { name: '深蓝', value: '#34495e' },
+    { name: '深绿', value: '#27ae60' },
+    { name: '深紫', value: '#8e44ad' },
+    { name: '深灰', value: '#7f8c8d' }
+  ];
+
+  // 1. 轻量级消息提示函数
   const Toast = {
     show: function(message, duration = 2000) {
       const toast = document.getElementById('toast-message');
@@ -834,22 +896,36 @@
 
   // 1. 自定义对话框函数
   const CustomDialog = {
-    show: function(title, message, type = 'alert', defaultValue = '') {
+    selectedColor: '#3498db',
+
+    show: function(title, message, type = 'alert', defaultValue = '', options = {}) {
       return new Promise((resolve) => {
         const dialog = document.getElementById('custom-dialog');
         const titleEl = document.getElementById('dialog-title');
         const messageEl = document.getElementById('dialog-message');
         const inputEl = document.getElementById('dialog-input');
+        const colorPickerEl = document.getElementById('dialog-color-picker');
         const cancelBtn = document.getElementById('dialog-cancel');
         const confirmBtn = document.getElementById('dialog-confirm');
 
         titleEl.textContent = title;
         messageEl.textContent = message;
 
+        // 重置颜色选择器
+        colorPickerEl.style.display = 'none';
+        this.selectedColor = options.defaultColor || '#3498db';
+
         if(type === 'prompt') {
           inputEl.style.display = 'block';
           inputEl.value = defaultValue;
           cancelBtn.style.display = 'block';
+
+          // 如果需要显示颜色选择器
+          if(options.showColorPicker) {
+            this.renderColorPicker(this.selectedColor);
+            colorPickerEl.style.display = 'block';
+          }
+
           setTimeout(() => inputEl.focus(), 100);
         } else if(type === 'confirm') {
           inputEl.style.display = 'none';
@@ -870,7 +946,11 @@
 
         confirmBtn.onclick = () => {
           cleanup();
-          resolve(type === 'prompt' ? inputEl.value : true);
+          if(type === 'prompt' && options.showColorPicker) {
+            resolve({ text: inputEl.value, color: this.selectedColor });
+          } else {
+            resolve(type === 'prompt' ? inputEl.value : true);
+          }
         };
 
         cancelBtn.onclick = () => {
@@ -882,7 +962,11 @@
           inputEl.onkeydown = (e) => {
             if(e.key === 'Enter') {
               cleanup();
-              resolve(inputEl.value);
+              if(options.showColorPicker) {
+                resolve({ text: inputEl.value, color: this.selectedColor });
+              } else {
+                resolve(inputEl.value);
+              }
             } else if(e.key === 'Escape') {
               cleanup();
               resolve(null);
@@ -897,8 +981,30 @@
     confirm: function(message, title = '确认') {
       return this.show(title, message, 'confirm');
     },
-    prompt: function(message, defaultValue = '', title = '输入') {
-      return this.show(title, message, 'prompt', defaultValue);
+    prompt: function(message, defaultValue = '', title = '输入', options = {}) {
+      return this.show(title, message, 'prompt', defaultValue, options);
+    },
+    renderColorPicker: function(selectedColor) {
+      const container = document.getElementById('dialog-color-options');
+      container.innerHTML = '';
+
+      COLORS.forEach(color => {
+        const dot = document.createElement('div');
+        dot.className = 'dialog-color-dot';
+        dot.style.background = color.value;
+        dot.title = color.name;
+
+        if (color.value === selectedColor) {
+          dot.classList.add('selected');
+        }
+
+        dot.onclick = () => {
+          this.selectedColor = color.value;
+          this.renderColorPicker(color.value);
+        };
+
+        container.appendChild(dot);
+      });
     }
   };
 
@@ -1172,6 +1278,11 @@ document.getElementById('btn-clear').onclick = async () => {
       const config = window.AppConfig.getConfig();
       const container = document.getElementById('tabs-container');
 
+      // 确保 groupColors 存在
+      if (!config.groupColors) {
+          config.groupColors = {};
+      }
+
       // 清空现有 tabs
       container.innerHTML = '';
 
@@ -1181,6 +1292,18 @@ document.getElementById('btn-clear').onclick = async () => {
           tab.className = 'tab';
           if(group === config.currentGroup) tab.classList.add('active');
           tab.dataset.group = group;
+
+          // 应用颜色
+          const color = config.groupColors[group] || '#3498db';
+          if(group === config.currentGroup) {
+              // 激活状态：完全不透明
+              tab.style.background = color;
+              tab.style.borderColor = color;
+          } else {
+              // 未激活状态：半透明
+              tab.style.background = color + '40'; // 添加40表示25%透明度
+              tab.style.borderColor = color + '40';
+          }
 
           tab.innerHTML = `
               <span class="tab-name">${group}</span>
@@ -1219,7 +1342,7 @@ document.getElementById('btn-clear').onclick = async () => {
               }
           });
 
-          // 双击修改名称
+          // 双击修改名称和颜色
           tab.addEventListener('dblclick', async (e) => {
               // 如果点击的是关闭按钮，不触发重命名
               if(e.target.classList.contains('tab-close')) {
@@ -1227,9 +1350,22 @@ document.getElementById('btn-clear').onclick = async () => {
               }
               e.stopPropagation();
               const oldName = tab.dataset.group;
-              const newName = await CustomDialog.prompt('修改分组名称:', oldName, '重命名分组');
-              if(newName && newName.trim() && newName !== oldName) {
-                  renameGroup(oldName, newName.trim());
+              const config = window.AppConfig.getConfig();
+              const currentColor = config.groupColors[oldName] || '#3498db';
+
+              const result = await CustomDialog.prompt('修改分组名称:', oldName, '重命名分组', {
+                  showColorPicker: true,
+                  defaultColor: currentColor
+              });
+
+              if(result && result.text && result.text.trim() && result.text !== oldName) {
+                  renameGroup(oldName, result.text.trim(), result.color);
+              } else if(result && result.color !== currentColor) {
+                  // 只修改颜色
+                  config.groupColors[oldName] = result.color;
+                  window.AppConfig.setConfig(config);
+                  updateTabs();
+                  Toast.show('颜色已更新');
               }
           });
 
@@ -1243,7 +1379,7 @@ document.getElementById('btn-clear').onclick = async () => {
   }
 
   // 新增：重命名分组
-  async function renameGroup(oldName, newName) {
+  async function renameGroup(oldName, newName, newColor) {
       const config = window.AppConfig.getConfig();
       if(config.groups.includes(newName)) {
           await CustomDialog.alert('分组名称已存在');
@@ -1255,6 +1391,15 @@ document.getElementById('btn-clear').onclick = async () => {
           if(config.currentGroup === oldName) {
               config.currentGroup = newName;
           }
+
+          // 更新颜色映射
+          if(newColor) {
+              config.groupColors[newName] = newColor;
+          } else if(config.groupColors[oldName]) {
+              config.groupColors[newName] = config.groupColors[oldName];
+          }
+          delete config.groupColors[oldName];
+
           window.AppConfig.setConfig(config);
 
           // 重命名文件夹
@@ -1375,16 +1520,25 @@ document.getElementById('btn-clear').onclick = async () => {
 
   // 新增：加号按钮事件
   document.getElementById('tab-add').addEventListener('click', async () => {
-      const newName = await CustomDialog.prompt('输入新分组名称:', '', '添加分组');
-      if(newName && newName.trim()) {
+      const result = await CustomDialog.prompt('输入新分组名称:', '', '添加分组', {
+          showColorPicker: true,
+          defaultColor: '#3498db'
+      });
+
+      if(result && result.text && result.text.trim()) {
           const config = window.AppConfig.getConfig();
-          const res = window.AppConfig.addGroup(newName.trim());
+          const res = window.AppConfig.addGroup(result.text.trim());
           if(res.success) {
               if(config.dataFolderPath) {
-                  window.services.createGroup(config.dataFolderPath, newName.trim());
+                  window.services.createGroup(config.dataFolderPath, result.text.trim());
               }
+
+              // 保存颜色
+              const updatedConfig = window.AppConfig.getConfig();
+              updatedConfig.groupColors[result.text.trim()] = result.color;
+              window.AppConfig.setConfig(updatedConfig);
               updateTabs();
-              Toast.show(`分组 "${newName.trim()}" 已添加`);
+              Toast.show(`分组 "${result.text.trim()}" 已添加`);
           } else {
               await CustomDialog.alert(res.error);
           }
