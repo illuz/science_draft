@@ -8,6 +8,7 @@ window.AppConfig = {
     autoSave: false,                       // 是否开启自动保存
     autoSaveInterval: 60,                  // 自动保存间隔(秒)
     keepVersionDays: 7,                    // 保留版本天数
+    fontSize: 20,                          // 编辑器字号
     initialized: false                     // 是否已初始化
   },
 

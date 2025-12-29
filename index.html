@@ -491,6 +491,80 @@
       opacity: 1;
       transform: translateY(0);
     }
+
+    /* 搜索框样式 */
+    .search-box {
+      position: fixed;
+      top: 60px;
+      right: 30px;
+      background: #3c3f41;
+      padding: 12px 15px;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      display: none;
+      z-index: 3500;
+      min-width: 300px;
+    }
+    .search-box.show {
+      display: block;
+    }
+    .search-box-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .search-box-title {
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .search-box-close {
+      color: #999;
+      cursor: pointer;
+      font-size: 20px;
+      line-height: 1;
+      padding: 0 5px;
+    }
+    .search-box-close:hover {
+      color: #fff;
+    }
+    .search-input-wrapper {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .search-input {
+      flex: 1;
+      background: #2B2B2B;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 13px;
+      outline: none;
+    }
+    .search-input:focus {
+      border-color: #3498db;
+    }
+    .search-nav-btn {
+      background: #555;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: 0.2s;
+    }
+    .search-nav-btn:hover {
+      background: #666;
+    }
+    .search-info {
+      color: #888;
+      font-size: 12px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -660,6 +734,23 @@
         </p>
       </div>
 
+      <!-- 编辑器设置 -->
+      <div class="settings-section">
+        <h3>✏️ 编辑器</h3>
+        <div class="settings-row">
+          <label>字号大小</label>
+          <select id="font-size-select" style="background:#2B2B2B; color:#fff; border:1px solid #555; padding:6px 10px; border-radius:4px; outline:none; cursor:pointer;">
+            <option value="14">小 (14px)</option>
+            <option value="16">较小 (16px)</option>
+            <option value="18">中等 (18px)</option>
+            <option value="20" selected>默认 (20px)</option>
+            <option value="22">较大 (22px)</option>
+            <option value="24">大 (24px)</option>
+            <option value="28">特大 (28px)</option>
+          </select>
+        </div>
+      </div>
+
       <!-- 自动保存设置 -->
       <div class="settings-section">
         <h3>💾 自动保存</h3>
@@ -706,6 +797,20 @@
 
 <!-- 轻量级消息提示 -->
 <div id="toast-message" class="toast-message"></div>
+
+<!-- 搜索框 -->
+<div id="search-box" class="search-box">
+  <div class="search-box-header">
+    <span class="search-box-title">搜索</span>
+    <span class="search-box-close" id="search-close">×</span>
+  </div>
+  <div class="search-input-wrapper">
+    <input type="text" class="search-input" id="search-input" placeholder="输入搜索内容...">
+    <button class="search-nav-btn" id="search-prev">↑</button>
+    <button class="search-nav-btn" id="search-next">↓</button>
+  </div>
+  <div class="search-info" id="search-info">输入内容开始搜索</div>
+</div>
 
 <!-- === 核心逻辑区 === -->
 <script>
@@ -929,6 +1034,13 @@ document.getElementById('btn-clear').onclick = async () => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
           e.preventDefault();
           saveToCurrentGroup();
+          return;
+      }
+
+      // Ctrl+F (Windows/Linux) 或 Cmd+F (macOS) 搜索
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+          e.preventDefault();
+          openSearchBox();
           return;
       }
 
@@ -1159,6 +1271,108 @@ document.getElementById('btn-clear').onclick = async () => {
       }
   }
 
+  // 新增：搜索功能
+  const SearchBox = {
+    matches: [],
+    currentIndex: -1,
+
+    open: function() {
+      document.getElementById('search-box').classList.add('show');
+      const input = document.getElementById('search-input');
+      input.focus();
+      input.select();
+    },
+
+    close: function() {
+      document.getElementById('search-box').classList.remove('show');
+      this.clearHighlights();
+      editor.focus();
+    },
+
+    search: function(keyword) {
+      this.clearHighlights();
+      this.matches = [];
+      this.currentIndex = -1;
+
+      if (!keyword) {
+        document.getElementById('search-info').textContent = '输入内容开始搜索';
+        return;
+      }
+
+      const text = editor.value;
+      const lowerText = text.toLowerCase();
+      const lowerKeyword = keyword.toLowerCase();
+      let pos = 0;
+
+      while ((pos = lowerText.indexOf(lowerKeyword, pos)) !== -1) {
+        this.matches.push(pos);
+        pos += keyword.length;
+      }
+
+      if (this.matches.length > 0) {
+        document.getElementById('search-info').textContent = `找到 ${this.matches.length} 个结果`;
+        this.currentIndex = 0;
+        this.highlightCurrent();
+      } else {
+        document.getElementById('search-info').textContent = '未找到匹配项';
+      }
+    },
+
+    next: function() {
+      if (this.matches.length === 0) return;
+      this.currentIndex = (this.currentIndex + 1) % this.matches.length;
+      this.highlightCurrent();
+    },
+
+    prev: function() {
+      if (this.matches.length === 0) return;
+      this.currentIndex = (this.currentIndex - 1 + this.matches.length) % this.matches.length;
+      this.highlightCurrent();
+    },
+
+    highlightCurrent: function() {
+      if (this.currentIndex < 0 || this.currentIndex >= this.matches.length) return;
+      const pos = this.matches[this.currentIndex];
+      const keyword = document.getElementById('search-input').value;
+      editor.focus();
+      editor.setSelectionRange(pos, pos + keyword.length);
+      editor.scrollTop = editor.scrollHeight * (pos / editor.value.length) - editor.clientHeight / 2;
+      document.getElementById('search-info').textContent = `${this.currentIndex + 1} / ${this.matches.length}`;
+    },
+
+    clearHighlights: function() {
+      // 清除选中状态
+      if (editor === document.activeElement) {
+        const pos = editor.selectionStart;
+        editor.setSelectionRange(pos, pos);
+      }
+    }
+  };
+
+  function openSearchBox() {
+    SearchBox.open();
+  }
+
+  // 搜索框事件绑定
+  document.getElementById('search-close').onclick = () => SearchBox.close();
+  document.getElementById('search-input').addEventListener('input', (e) => {
+    SearchBox.search(e.target.value);
+  });
+  document.getElementById('search-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        SearchBox.prev();
+      } else {
+        SearchBox.next();
+      }
+    } else if (e.key === 'Escape') {
+      SearchBox.close();
+    }
+  });
+  document.getElementById('search-prev').onclick = () => SearchBox.prev();
+  document.getElementById('search-next').onclick = () => SearchBox.next();
+
   // 新增：加号按钮事件
   document.getElementById('tab-add').addEventListener('click', async () => {
       const newName = await CustomDialog.prompt('输入新分组名称:', '', '添加分组');
@@ -1201,6 +1415,9 @@ document.getElementById('btn-clear').onclick = async () => {
 
       // 更新当前路径显示
       document.getElementById('current-path').textContent = config.dataFolderPath || '未设置';
+
+      // 更新字号设置
+      document.getElementById('font-size-select').value = config.fontSize || 20;
 
       // 更新自动保存设置
       document.getElementById('auto-save-toggle').checked = config.autoSave;
@@ -1246,12 +1463,17 @@ document.getElementById('btn-clear').onclick = async () => {
       const autoSave = document.getElementById('auto-save-toggle').checked;
       const interval = parseInt(document.getElementById('auto-save-interval').value);
       const keepDays = parseInt(document.getElementById('keep-version-days').value);
+      const fontSize = parseInt(document.getElementById('font-size-select').value);
 
       window.AppConfig.updateConfig({
           autoSave: autoSave,
           autoSaveInterval: interval,
-          keepVersionDays: keepDays
+          keepVersionDays: keepDays,
+          fontSize: fontSize
       });
+
+      // 应用字号设置
+      editor.style.fontSize = fontSize + 'px';
 
       // 重启自动保存
       window.AutoSave.stop();
@@ -1282,6 +1504,9 @@ document.getElementById('btn-clear').onclick = async () => {
   async function initializeApp() {
       if(!window.AppConfig) return;
       appConfig = window.AppConfig.getConfig();
+
+      // 应用字号设置
+      editor.style.fontSize = (appConfig.fontSize || 20) + 'px';
 
       // 检查是否首次使用或数据文件夹不存在
       if(!appConfig.initialized || !appConfig.dataFolderPath) {
