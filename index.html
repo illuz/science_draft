@@ -9,29 +9,133 @@
   <script src="math.min.js"></script>
   <script>if (window.module) module = window.module;</script>
 
+  <!-- 2. 引入新模块 -->
+  <script src="config.js"></script>
+  <script src="auto_save.js"></script>
+
   <style>
     /* === 全局深色主题 === */
     body, html { margin: 0; padding: 0; height: 100%; font-family: "Consolas", "Microsoft YaHei", sans-serif; background: #303133; color: #E0E0E0; overflow: hidden; }
     
     /* 1. 顶部标题栏 (新配色 #5D5950) */
     .header {
-      height: 50px;
+      height: 40px;
       background: #5D5950;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 20px;
+      padding: 0 15px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
       user-select: none;
       z-index: 10;
       position: relative;
     }
-    .header-title { font-size: 16px; font-weight: bold; color: #fff; letter-spacing: 1px; opacity: 0.9; }
-    .menu-btn { cursor: pointer; font-size: 24px; color: #ddd; transition: 0.2s; }
-    .menu-btn:hover { color: #fff; transform: scale(1.1); }
+    .header-left { display: flex; align-items: center; gap: 10px; max-width: calc(100% - 80px); }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .header-title { font-size: 14px; font-weight: bold; color: #fff; letter-spacing: 1px; opacity: 0.9; }
+
+    /* Tab 标签页样式 */
+    .tabs-container {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.3) transparent;
+    }
+    .tabs-container::-webkit-scrollbar {
+      height: 4px;
+    }
+    .tabs-container::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.3);
+      border-radius: 2px;
+    }
+    .tabs-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0,0,0,0.2);
+      padding: 4px 10px;
+      border-radius: 4px 4px 0 0;
+      cursor: pointer;
+      transition: 0.2s;
+      border: 1px solid transparent;
+      user-select: none;
+      flex-shrink: 0; /* 防止 tab 被压缩 */
+    }
+    .tab:hover {
+      background: rgba(0,0,0,0.3);
+      border-color: rgba(255,255,255,0.1);
+    }
+    .tab.active {
+      background: #3498db;
+      border-color: #3498db;
+    }
+    .tab-name {
+      font-size: 12px;
+      color: #fff;
+      max-width: 100px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .tab-close {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      padding: 0 3px;
+      border-radius: 3px;
+      transition: 0.2s;
+    }
+    .tab-close:hover {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+    }
+    .tab-add {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      color: #fff;
+      transition: 0.2s;
+    }
+    .tab-add:hover {
+      background: #3498db;
+      transform: scale(1.1);
+    }
+
+    /* 右侧图标按钮 */
+    .icon-btn-header {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      color: #ddd;
+      transition: 0.2s;
+    }
+    .icon-btn-header:hover {
+      background: rgba(0,0,0,0.4);
+      color: #fff;
+      transform: scale(1.1);
+    }
 
     /* 2. 主容器 */
-    .main-container { display: flex; height: calc(100% - 50px); position: relative; }
+    .main-container { display: flex; height: calc(100% - 40px); position: relative; }
     
     /* 3. 编辑器 (融入背景，去除边框) */
     #editor {
@@ -180,18 +284,233 @@
       background: #5D5950; color: #fff; border: none; padding: 8px 30px; border-radius: 4px; cursor: pointer; margin-top: 20px; transition: 0.2s;
     }
     .btn-close:hover { background: #777265; }
+
+    /* 7. 设置面板样式 */
+    .settings-panel {
+      background: #3c3f41;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .settings-section {
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #555;
+    }
+    .settings-section:last-child { border-bottom: none; }
+    .settings-section h3 {
+      color: #3498db;
+      font-size: 16px;
+      margin: 0 0 15px 0;
+    }
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .settings-row label { color: #ccc; font-size: 14px; }
+    .settings-row input[type="text"],
+    .settings-row input[type="number"] {
+      background: #2B2B2B;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 6px 10px;
+      border-radius: 4px;
+      width: 200px;
+      outline: none;
+    }
+    .settings-row input:focus { border-color: #3498db; }
+    .settings-row button {
+      background: #3498db;
+      color: #fff;
+      border: none;
+      padding: 6px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: 0.2s;
+    }
+    .settings-row button:hover { background: #2980b9; }
+    .settings-row button.danger {
+      background: #e74c3c;
+    }
+    .settings-row button.danger:hover { background: #c0392b; }
+
+    /* 开关按钮 */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #555;
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #3498db; }
+    input:checked + .slider:before { transform: translateX(26px); }
+
+    /* 分组列表 */
+    .group-list {
+      background: #2B2B2B;
+      padding: 10px;
+      border-radius: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .group-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      margin-bottom: 5px;
+      background: #3c3f41;
+      border-radius: 4px;
+    }
+    .group-item span { color: #fff; font-size: 14px; }
+    .group-item button {
+      background: #e74c3c;
+      color: #fff;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .group-item button:hover { background: #c0392b; }
+
+    /* 自定义对话框样式 */
+    .custom-dialog {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 3000;
+    }
+    .custom-dialog.show { display: flex; }
+    .dialog-box {
+      background: #3c3f41;
+      padding: 20px;
+      border-radius: 8px;
+      min-width: 300px;
+      max-width: 500px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    .dialog-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #fff;
+      margin-bottom: 15px;
+    }
+    .dialog-message {
+      color: #ccc;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 15px;
+      white-space: pre-line;
+    }
+    .dialog-input {
+      width: 100%;
+      background: #2B2B2B;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+      outline: none;
+    }
+    .dialog-input:focus { border-color: #3498db; }
+    .dialog-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .dialog-btn {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+    .dialog-btn-primary {
+      background: #3498db;
+      color: #fff;
+    }
+    .dialog-btn-primary:hover { background: #2980b9; }
+    .dialog-btn-secondary {
+      background: #555;
+      color: #fff;
+    }
+    .dialog-btn-secondary:hover { background: #666; }
+
+    /* 轻量级消息提示 */
+    .toast-message {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: rgba(0, 0, 0, 0.75);
+      color: #aaa;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 4000;
+      max-width: 300px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .toast-message.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body>
 
-<div class="toolbar">
-    <!-- <div class="toolbar-title">📝 智能理科草稿本</div> -->
-  <!-- 顶部 Header -->
+<!-- 顶部 Header -->
 <div class="header">
-  <div class="header-title">计算公式</div>
-  <!-- 帮助按钮移到了这里 -->
-  <div class="menu-btn" id="btn-help" title="帮助/菜单">≡</div>
-</div>
+  <div class="header-left">
+    <!-- Tab 标签页 -->
+    <div class="tabs-container" id="tabs-container">
+      <div class="tab active" data-group="随便算算">
+        <span class="tab-name">随便算算</span>
+        <span class="tab-close">×</span>
+      </div>
+    </div>
+    <div class="tab-add" id="tab-add" title="添加分组">+</div>
+  </div>
+  <!-- 右侧按钮组 -->
+  <div class="header-right">
+    <div class="icon-btn-header" id="btn-settings" title="设置">⚙</div>
+    <div class="icon-btn-header" id="btn-help" title="帮助">≡</div>
   </div>
 </div>
 
@@ -208,18 +527,13 @@
   <div class="icon-btn" id="btn-sidebar" data-tip="素材栏">
     <img src="icons/image.png" alt="素材">
   </div>
-  
-  <!-- 存为文件夹 -->
-  <div class="icon-btn" id="btn-save-folder" data-tip="存为文件夹">
+
+  <!-- 保存到当前分组 -->
+  <div class="icon-btn" id="btn-save" data-tip="保存">
     <img src="icons/save.png" alt="保存">
   </div>
-  
-  <!-- 打开文件夹 -->
-  <div class="icon-btn" id="btn-open-folder" data-tip="打开文件夹">
-    <img src="icons/folder.png" alt="打开">
-  </div>
 </div>
-  <textarea id="editor" placeholder="正在加载..."></textarea>
+  <textarea id="editor" placeholder="输入 1+1= 计算...\n输入 x^-2 [空格] 变上标..."></textarea>
   <div id="image-sidebar">
     <div class="sidebar-tip">Ctrl+V 粘贴图片<br>双击在新窗口编辑</div>
   </div> 
@@ -312,16 +626,185 @@
   </div>
 </div>
 
+<!-- 设置面板弹窗 -->
+<div id="settings-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-content" style="width: 700px; max-height: 85vh;">
+    <div class="modal-header" style="border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 15px; display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-size:18px; font-weight:bold; color:#fff;">⚙️ 设置</span>
+      <button style="border:none; background:none; cursor:pointer; font-size:24px; color:#999;" onclick="document.getElementById('settings-modal').style.display='none'">×</button>
+    </div>
+
+    <div class="settings-panel">
+      <!-- 数据文件夹设置 -->
+      <div class="settings-section">
+        <h3>📁 数据文件夹</h3>
+        <div class="settings-row">
+          <label>当前路径:</label>
+          <span id="current-path" style="color:#3498db; font-size:13px;">未设置</span>
+        </div>
+        <div class="settings-row">
+          <button id="btn-select-data-folder">选择数据文件夹</button>
+          <span style="font-size:12px; color:#888;">选择后将自动保存到此文件夹</span>
+        </div>
+      </div>
+
+      <!-- 分组管理 -->
+      <div class="settings-section">
+        <h3>📂 分组管理</h3>
+        <p style="color:#888; font-size:13px; margin:0;">
+          在顶部 Tab 标签页中管理分组：<br>
+          • 点击 Tab 切换分组<br>
+          • 双击 Tab 名称修改<br>
+          • 点击 × 删除分组<br>
+          • 点击 + 添加新分组
+        </p>
+      </div>
+
+      <!-- 自动保存设置 -->
+      <div class="settings-section">
+        <h3>💾 自动保存</h3>
+        <div class="settings-row">
+          <label>启用自动保存</label>
+          <label class="switch">
+            <input type="checkbox" id="auto-save-toggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="settings-row">
+          <label>保存间隔(秒)</label>
+          <input type="number" id="auto-save-interval" value="60" min="10" max="600" style="width:100px;">
+        </div>
+        <div class="settings-row">
+          <label>保留版本天数</label>
+          <input type="number" id="keep-version-days" value="7" min="1" max="365" style="width:100px;">
+        </div>
+        <div class="settings-row">
+          <button id="btn-clean-versions">立即清理过期版本</button>
+        </div>
+      </div>
+
+      <!-- 保存按钮 -->
+      <div style="text-align:center; margin-top:20px;">
+        <button class="btn-close" id="btn-save-settings">保存设置</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 自定义对话框 -->
+<div id="custom-dialog" class="custom-dialog">
+  <div class="dialog-box">
+    <div class="dialog-title" id="dialog-title">提示</div>
+    <div class="dialog-message" id="dialog-message"></div>
+    <input type="text" class="dialog-input" id="dialog-input" style="display:none;">
+    <div class="dialog-buttons">
+      <button class="dialog-btn dialog-btn-secondary" id="dialog-cancel">取消</button>
+      <button class="dialog-btn dialog-btn-primary" id="dialog-confirm">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 轻量级消息提示 -->
+<div id="toast-message" class="toast-message"></div>
 
 <!-- === 核心逻辑区 === -->
 <script>
+  // 0. 轻量级消息提示函数
+  const Toast = {
+    show: function(message, duration = 2000) {
+      const toast = document.getElementById('toast-message');
+      toast.textContent = message;
+      toast.classList.add('show');
+
+      // 清除之前的定时器
+      if (this.timer) clearTimeout(this.timer);
+
+      // 设置新的定时器
+      this.timer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, duration);
+    },
+    timer: null
+  };
+
+  // 1. 自定义对话框函数
+  const CustomDialog = {
+    show: function(title, message, type = 'alert', defaultValue = '') {
+      return new Promise((resolve) => {
+        const dialog = document.getElementById('custom-dialog');
+        const titleEl = document.getElementById('dialog-title');
+        const messageEl = document.getElementById('dialog-message');
+        const inputEl = document.getElementById('dialog-input');
+        const cancelBtn = document.getElementById('dialog-cancel');
+        const confirmBtn = document.getElementById('dialog-confirm');
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+
+        if(type === 'prompt') {
+          inputEl.style.display = 'block';
+          inputEl.value = defaultValue;
+          cancelBtn.style.display = 'block';
+          setTimeout(() => inputEl.focus(), 100);
+        } else if(type === 'confirm') {
+          inputEl.style.display = 'none';
+          cancelBtn.style.display = 'block';
+        } else {
+          inputEl.style.display = 'none';
+          cancelBtn.style.display = 'none';
+        }
+
+        dialog.classList.add('show');
+
+        const cleanup = () => {
+          dialog.classList.remove('show');
+          confirmBtn.onclick = null;
+          cancelBtn.onclick = null;
+          inputEl.onkeydown = null;
+        };
+
+        confirmBtn.onclick = () => {
+          cleanup();
+          resolve(type === 'prompt' ? inputEl.value : true);
+        };
+
+        cancelBtn.onclick = () => {
+          cleanup();
+          resolve(type === 'prompt' ? null : false);
+        };
+
+        if(type === 'prompt') {
+          inputEl.onkeydown = (e) => {
+            if(e.key === 'Enter') {
+              cleanup();
+              resolve(inputEl.value);
+            } else if(e.key === 'Escape') {
+              cleanup();
+              resolve(null);
+            }
+          };
+        }
+      });
+    },
+    alert: function(message, title = '提示') {
+      return this.show(title, message, 'alert');
+    },
+    confirm: function(message, title = '确认') {
+      return this.show(title, message, 'confirm');
+    },
+    prompt: function(message, defaultValue = '', title = '输入') {
+      return this.show(title, message, 'prompt', defaultValue);
+    }
+  };
+
   // 1. 初始化 Math.js
   let mathLib = null;
   // --- 新增：一键清屏功能 ---
   // --- 修改后：一键清屏 (文字 + 图片) ---
-document.getElementById('btn-clear').onclick = () => {
+document.getElementById('btn-clear').onclick = async () => {
     // 提示语变了，告知用户图片也会没了
-    if (confirm("💥 确定要清空所有内容吗？\n\n此操作将删除：\n1. 所有草稿文字\n2. 侧边栏所有图片素材\n\n(不可撤销，请谨慎操作)")) {
+    const confirmed = await CustomDialog.confirm("💥 确定要清空所有内容吗？\n\n此操作将删除：\n1. 所有草稿文字\n2. 侧边栏所有图片素材\n\n(不可撤销，请谨慎操作)", "清空确认");
+    if (confirmed) {
         
         // 1. 清空文字
         editor.value = "";
@@ -339,7 +822,7 @@ document.getElementById('btn-clear').onclick = () => {
         editor.focus();
         
         // 给个轻提示
-        if(window.utools) utools.showNotification("已清空所有内容");
+        Toast.show("已清空所有内容");
     }
 };
   try {
@@ -402,8 +885,12 @@ document.getElementById('btn-clear').onclick = () => {
   // 2. 主 UI 逻辑
   const editor = document.getElementById('editor');
   const sidebar = document.getElementById('image-sidebar');
-  const DB_ID = 'science_draft_v4'; 
+  const DB_ID = 'science_draft_v4';
   let isResultSelected = false;
+
+  // 新增：全局配置变量
+  let appConfig = null;
+  let currentGroupData = { text: '', images: [] };
 
   // 输入事件
   editor.addEventListener('input', (e) => {
@@ -438,6 +925,13 @@ document.getElementById('btn-clear').onclick = () => {
 
   // 按键事件
   editor.addEventListener('keydown', (e) => {
+      // Ctrl+S (Windows/Linux) 或 Cmd+S (macOS) 保存
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+          e.preventDefault();
+          saveToCurrentGroup();
+          return;
+      }
+
       if (e.key === 'Tab') {
           if (isResultSelected) { e.preventDefault(); editor.selectionStart = editor.selectionEnd; isResultSelected = false; }
           else { e.preventDefault(); document.execCommand('insertText', false, '\t'); }
@@ -454,30 +948,9 @@ document.getElementById('btn-clear').onclick = () => {
       }
   });
 
-  // 文件夹 & 侧边栏功能
-  document.getElementById('btn-save-folder').onclick = () => {
-      if(!window.services) return alert("插件错误: preload.js 未加载");
-      const path = window.services.selectFolder();
-      if(!path) return;
-      const imgs = []; document.querySelectorAll('#image-sidebar img').forEach(i => imgs.push(i.src));
-      const res = window.services.saveToFolder(path, editor.value, imgs);
-      if(res.success) utools.showNotification("已保存到: " + res.newPath);
-      else alert("失败: " + res.error);
-  };
-
-  document.getElementById('btn-open-folder').onclick = () => {
-      if(!window.services) return;
-      const path = window.services.selectFolder();
-      if(!path) return;
-      const res = window.services.loadFromFolder(path);
-      if(res.success) {
-          editor.value = res.data.text;
-          sidebar.innerHTML = '<div class="sidebar-tip">Ctrl+V 粘贴图片<br>双击在新窗口编辑</div>';
-          res.data.images.forEach(addImageToSidebar);
-          if(res.data.images.length) sidebar.classList.add('active');
-          saveDraft();
-          utools.showNotification("导入成功");
-      } else alert("失败: " + res.error);
+  // 新增：保存到当前分组
+  document.getElementById('btn-save').onclick = () => {
+      saveToCurrentGroup();
   };
 
   function addImageToSidebar(src) {
@@ -526,8 +999,54 @@ document.getElementById('btn-clear').onclick = () => {
      const imgs = []; document.querySelectorAll('#image-sidebar img').forEach(i => imgs.push(i.src));
      utools.db.put({ _id: DB_ID, data: { text: editor.value, images: imgs }, _rev: utools.db.get(DB_ID)?._rev });
   }
+
+  // 新增：保存到当前分组
+  async function saveToCurrentGroup() {
+      if(!window.services || !window.AppConfig) {
+          await CustomDialog.alert("插件错误: 模块未加载");
+          return;
+      }
+      const config = window.AppConfig.getConfig();
+
+      if(!config.initialized || !config.dataFolderPath) {
+          await CustomDialog.alert("请先在设置中选择数据文件夹");
+          document.getElementById('settings-modal').style.display = 'flex';
+          return;
+      }
+
+      const imgs = [];
+      document.querySelectorAll('#image-sidebar img').forEach(i => imgs.push(i.src));
+      const res = window.services.saveToGroup(config.dataFolderPath, config.currentGroup, editor.value, imgs);
+
+      if(res.success) {
+          Toast.show(`已保存到分组: ${config.currentGroup}`);
+          window.AutoSave.updateLastSavedHash(editor.value, imgs);
+      } else {
+          await CustomDialog.alert("保存失败: " + res.error);
+      }
+  }
+  // 新增：从当前分组加载数据
+  function loadFromCurrentGroup() {
+      if(!window.services || !window.AppConfig) return;
+      const config = window.AppConfig.getConfig();
+
+      if(!config.initialized || !config.dataFolderPath) {
+          loadDraft(); // 回退到旧版本加载
+          return;
+      }
+
+      const res = window.services.loadFromGroup(config.dataFolderPath, config.currentGroup);
+      if(res.success) {
+          editor.value = res.data.text || '';
+          sidebar.innerHTML = '<div class="sidebar-tip">Ctrl+V 粘贴图片<br>双击在新窗口编辑</div>';
+          res.data.images.forEach(addImageToSidebar);
+          if(res.data.images.length) sidebar.classList.add('active');
+          window.AutoSave.updateLastSavedHash(editor.value, res.data.images);
+      }
+  }
+
   function loadDraft() {
-     editor.placeholder = "输入 1+1= 计算...\n输入 x^-2 [空格] 变上标...";
+     editor.placeholder = "旧版本加载";
      if(!window.utools) return;
      const doc = utools.db.get(DB_ID);
      if(doc && doc.data) {
@@ -536,7 +1055,280 @@ document.getElementById('btn-clear').onclick = () => {
          if(doc.data.images?.length) sidebar.classList.add('active');
      } else { document.getElementById('help-modal').style.display = 'flex'; }
   }
-  if(window.utools) utools.onPluginEnter(() => { editor.focus(); loadDraft(); }); else loadDraft();
+  // 新增：更新 Tab 标签页
+  function updateTabs() {
+      const config = window.AppConfig.getConfig();
+      const container = document.getElementById('tabs-container');
+
+      // 清空现有 tabs
+      container.innerHTML = '';
+
+      // 创建所有分组的 tab
+      config.groups.forEach(group => {
+          const tab = document.createElement('div');
+          tab.className = 'tab';
+          if(group === config.currentGroup) tab.classList.add('active');
+          tab.dataset.group = group;
+
+          tab.innerHTML = `
+              <span class="tab-name">${group}</span>
+              <span class="tab-close">×</span>
+          `;
+          container.appendChild(tab);
+      });
+
+      // 绑定事件
+      bindTabEvents();
+  }
+
+  // 新增：绑定 Tab 事件
+  function bindTabEvents() {
+      const tabs = document.querySelectorAll('.tab');
+      tabs.forEach(tab => {
+          const closeBtn = tab.querySelector('.tab-close');
+
+          // 移除旧的事件监听器（如果存在）
+          const newCloseBtn = closeBtn.cloneNode(true);
+          closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+
+          // 点击整个 tab 切换分组（自动保存）
+          tab.addEventListener('click', (e) => {
+              // 如果点击的是关闭按钮，不触发切换
+              if(e.target.classList.contains('tab-close')) {
+                  return;
+              }
+              const groupName = tab.dataset.group;
+              if(groupName !== window.AppConfig.getConfig().currentGroup) {
+                  saveToCurrentGroup(); // 切换前保存
+                  window.AppConfig.switchGroup(groupName);
+                  updateTabs();
+                  loadFromCurrentGroup();
+                  Toast.show(`已切换到: ${groupName}`);
+              }
+          });
+
+          // 双击修改名称
+          tab.addEventListener('dblclick', async (e) => {
+              // 如果点击的是关闭按钮，不触发重命名
+              if(e.target.classList.contains('tab-close')) {
+                  return;
+              }
+              e.stopPropagation();
+              const oldName = tab.dataset.group;
+              const newName = await CustomDialog.prompt('修改分组名称:', oldName, '重命名分组');
+              if(newName && newName.trim() && newName !== oldName) {
+                  renameGroup(oldName, newName.trim());
+              }
+          });
+
+          // 点击关闭按钮
+          newCloseBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const groupName = tab.dataset.group;
+              window.deleteGroup(groupName);
+          });
+      });
+  }
+
+  // 新增：重命名分组
+  async function renameGroup(oldName, newName) {
+      const config = window.AppConfig.getConfig();
+      if(config.groups.includes(newName)) {
+          await CustomDialog.alert('分组名称已存在');
+          return;
+      }
+      const index = config.groups.indexOf(oldName);
+      if(index !== -1) {
+          config.groups[index] = newName;
+          if(config.currentGroup === oldName) {
+              config.currentGroup = newName;
+          }
+          window.AppConfig.setConfig(config);
+
+          // 重命名文件夹
+          if(config.dataFolderPath) {
+              const oldPath = require('path').join(config.dataFolderPath, oldName);
+              const newPath = require('path').join(config.dataFolderPath, newName);
+              if(require('fs').existsSync(oldPath)) {
+                  require('fs').renameSync(oldPath, newPath);
+              }
+          }
+
+          updateTabs();
+          Toast.show(`已重命名: ${oldName} → ${newName}`);
+      }
+  }
+
+  // 新增：加号按钮事件
+  document.getElementById('tab-add').addEventListener('click', async () => {
+      const newName = await CustomDialog.prompt('输入新分组名称:', '', '添加分组');
+      if(newName && newName.trim()) {
+          const config = window.AppConfig.getConfig();
+          const res = window.AppConfig.addGroup(newName.trim());
+          if(res.success) {
+              if(config.dataFolderPath) {
+                  window.services.createGroup(config.dataFolderPath, newName.trim());
+              }
+              updateTabs();
+              Toast.show(`分组 "${newName.trim()}" 已添加`);
+          } else {
+              await CustomDialog.alert(res.error);
+          }
+      }
+  });
+
+  // 新增：启动自动保存
+  function startAutoSave() {
+      const config = window.AppConfig.getConfig();
+      window.AutoSave.start(config.autoSaveInterval, () => {
+          const imgs = [];
+          document.querySelectorAll('#image-sidebar img').forEach(i => imgs.push(i.src));
+          if(window.AutoSave.hasContentChanged(editor.value, imgs)) {
+              saveToCurrentGroup();
+          }
+      });
+  }
+
+
+  // 新增：打开设置面板
+  document.getElementById('btn-settings').onclick = () => {
+      openSettingsPanel();
+  };
+
+  // 新增：打开设置面板函数
+  function openSettingsPanel() {
+      const config = window.AppConfig.getConfig();
+
+      // 更新当前路径显示
+      document.getElementById('current-path').textContent = config.dataFolderPath || '未设置';
+
+      // 更新自动保存设置
+      document.getElementById('auto-save-toggle').checked = config.autoSave;
+      document.getElementById('auto-save-interval').value = config.autoSaveInterval;
+      document.getElementById('keep-version-days').value = config.keepVersionDays;
+
+      // 显示设置面板
+      document.getElementById('settings-modal').style.display = 'flex';
+  }
+
+  // 新增：选择数据文件夹
+  document.getElementById('btn-select-data-folder').onclick = () => {
+      const path = window.services.selectFolder();
+      if(path) {
+          window.AppConfig.initializeDataFolder(path);
+          document.getElementById('current-path').textContent = path;
+          updateTabs(); // 更新 Tab 显示
+          Toast.show('数据文件夹设置成功');
+      }
+  };
+
+  // 新增：删除分组（全局函数）
+  window.deleteGroup = async (groupName) => {
+      const confirmed = await CustomDialog.confirm(`确定要删除分组 "${groupName}" 吗？\n\n此操作将删除该分组的所有数据文件！`, '删除确认');
+      if(!confirmed) {
+          return;
+      }
+      saveToCurrentGroup(); // 删除前保存当前分组
+      const config = window.AppConfig.getConfig();
+      window.services.deleteGroup(config.dataFolderPath, groupName);
+      const res = window.AppConfig.removeGroup(groupName);
+      if(res.success) {
+          updateTabs();
+          loadFromCurrentGroup();
+          Toast.show(`分组 "${groupName}" 已删除`);
+      } else {
+          await CustomDialog.alert(res.error);
+      }
+  };
+
+  // 新增：保存设置
+  document.getElementById('btn-save-settings').onclick = () => {
+      const autoSave = document.getElementById('auto-save-toggle').checked;
+      const interval = parseInt(document.getElementById('auto-save-interval').value);
+      const keepDays = parseInt(document.getElementById('keep-version-days').value);
+
+      window.AppConfig.updateConfig({
+          autoSave: autoSave,
+          autoSaveInterval: interval,
+          keepVersionDays: keepDays
+      });
+
+      // 重启自动保存
+      window.AutoSave.stop();
+      if(autoSave) {
+          startAutoSave();
+      }
+
+      document.getElementById('settings-modal').style.display = 'none';
+      Toast.show('设置已保存');
+  };
+
+  // 新增：清理过期版本
+  document.getElementById('btn-clean-versions').onclick = async () => {
+      const config = window.AppConfig.getConfig();
+      if(!config.initialized || !config.dataFolderPath) {
+          await CustomDialog.alert('请先设置数据文件夹');
+          return;
+      }
+      const res = window.services.cleanOldVersions(config.dataFolderPath, config.keepVersionDays);
+      if(res.success) {
+          Toast.show(`已清理 ${res.cleaned} 个过期文件`);
+      } else {
+          await CustomDialog.alert('清理失败: ' + res.error);
+      }
+  };
+
+  // 新增：初始化应用配置
+  async function initializeApp() {
+      if(!window.AppConfig) return;
+      appConfig = window.AppConfig.getConfig();
+
+      // 检查是否首次使用或数据文件夹不存在
+      if(!appConfig.initialized || !appConfig.dataFolderPath) {
+          // 首次使用，提示选择数据文件夹
+          setTimeout(async () => {
+              const confirmed = await CustomDialog.confirm('欢迎使用智能理科草稿本！\n\n检测到您还未设置数据文件夹。\n是否现在选择数据文件夹？\n\n（可稍后在设置中配置）', '首次设置');
+              if(confirmed) {
+                  const path = window.services.selectFolder();
+                  if(path) {
+                      window.AppConfig.initializeDataFolder(path);
+                      appConfig = window.AppConfig.getConfig();
+                      updateTabs();
+                      Toast.show('数据文件夹设置成功');
+                  }
+              }
+          }, 500);
+      }
+
+      // 更新 Tab 标签页
+      updateTabs();
+
+      // 加载当前分组数据
+      loadFromCurrentGroup();
+
+      // 启动自动保存
+      if(appConfig.autoSave && appConfig.initialized) {
+          startAutoSave();
+      }
+
+      // 清理过期版本
+      if(appConfig.initialized && appConfig.dataFolderPath) {
+          window.services.cleanOldVersions(appConfig.dataFolderPath, appConfig.keepVersionDays);
+      }
+  }
+
+  // 新增：插件退出时自动保存
+  if(window.utools) {
+      utools.onPluginOut(() => {
+          saveToCurrentGroup();
+      });
+      utools.onPluginEnter(() => {
+          editor.focus();
+          initializeApp();
+      });
+  } else {
+      initializeApp();
+  }
 </script>
 </body>
 </html>
